@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import './App.css';
 
+// MUST update this to your live Railway URL + Port 8080
+const API_URL = 'https://fullstackprojectbackend-production.up.railway.app:8080';
+
 function Auth({ onAuthSuccess, defaultIsLogin }) {
   const [isLogin, setIsLogin] = useState(defaultIsLogin);
   const [identifier, setIdentifier] = useState('');
@@ -34,7 +37,8 @@ function Auth({ onAuthSuccess, defaultIsLogin }) {
     const payload = isLogin ? { identifier, password } : { username, email, password };
     
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      // Swapped localhost for the live API_URL variable
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -48,6 +52,7 @@ function Auth({ onAuthSuccess, defaultIsLogin }) {
         setError(data.error || 'Authentication failed');
       }
     } catch (err) {
+      // This is the error you were seeing because of the localhost link
       setError('Failed to connect to server');
     }
   };
@@ -71,7 +76,6 @@ function Auth({ onAuthSuccess, defaultIsLogin }) {
         </h2>
         {error && <div style={{ backgroundColor: 'rgba(248, 113, 113, 0.1)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '16px', textAlign: 'center', fontSize: '14px' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          
           {isLogin ? (
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Username or Email</label>

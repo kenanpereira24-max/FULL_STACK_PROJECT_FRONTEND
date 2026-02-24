@@ -8,7 +8,8 @@ import Home from './Home';
 import Profile from './Profile';
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://fullstackprojectbackend-production.up.railway.app';
+// Hardcoded live backend URL from Railway
+const API_URL = 'https://fullstackprojectbackend-production.up.railway.app';
 
 function AppRoutes() {
   const [user, setUser] = useState(null);

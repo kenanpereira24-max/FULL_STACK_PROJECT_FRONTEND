@@ -8,6 +8,8 @@ import Home from './Home';
 import Profile from './Profile';
 import './App.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://fullstackprojectbackend-production.up.railway.app';
+
 function AppRoutes() {
   const [user, setUser] = useState(null);
   const [files, setFiles] = useState([]);
@@ -33,12 +35,12 @@ function AppRoutes() {
 
   useEffect(() => {
     if (user && user.id) {
-      fetch(`http://localhost:5000/api/folders/${user.id}`)
+      fetch(`${API_URL}/api/folders/${user.id}`)
         .then(res => res.json())
         .then(data => setFolders(data))
         .catch(() => setAlertModal({ show: true, title: 'Error', message: 'Failed to load folders.' }));
 
-      fetch(`http://localhost:5000/api/files/${user.id}`)
+      fetch(`${API_URL}/api/files/${user.id}`)
         .then(res => res.json())
         .then(data => setFiles(data))
         .catch(() => setAlertModal({ show: true, title: 'Error', message: 'Failed to load files.' }));
@@ -80,7 +82,7 @@ function AppRoutes() {
 
   const handleShare = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/share', {
+      const response = await fetch(`${API_URL}/api/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, permission: 'viewer' })
@@ -106,7 +108,7 @@ function AppRoutes() {
       formData.append('folderId', currentFolder !== null ? currentFolder : 'null');
 
       try {
-        const response = await fetch('http://localhost:5000/api/upload', {
+        const response = await fetch(`${API_URL}/api/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -154,7 +156,7 @@ function AppRoutes() {
   const confirmCreateFolder = async () => {
     if (newFolderName.trim()) {
       try {
-        const response = await fetch('http://localhost:5000/api/folders', {
+        const response = await fetch(`${API_URL}/api/folders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newFolderName.trim(), userId: user.id })
@@ -179,7 +181,7 @@ function AppRoutes() {
       const fileType = extMatch ? extMatch[1] : "txt";
 
       try {
-        const response = await fetch('http://localhost:5000/api/files', {
+        const response = await fetch(`${API_URL}/api/files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -219,7 +221,7 @@ function AppRoutes() {
     const newSize = safeContent.length < 1024 ? `${safeContent.length} B` : `${(safeContent.length / 1024).toFixed(1)} KB`;
     
     try {
-      await fetch(`http://localhost:5000/api/files/${editingFile.id}`, {
+      await fetch(`${API_URL}/api/files/${editingFile.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: safeContent, size: newSize })
@@ -466,12 +468,10 @@ function AppRoutes() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
     </BrowserRouter>
   );
 }
-
-export default App;

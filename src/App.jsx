@@ -5,7 +5,7 @@ import Auth from './Auth';
 import PlanSelection from './PlanSelection';
 import Navbar from './Navbar';
 import Home from './Home';
-import Profile from './profile';
+import Profile from './Profile';
 import './App.css';
 
 function AppRoutes() {

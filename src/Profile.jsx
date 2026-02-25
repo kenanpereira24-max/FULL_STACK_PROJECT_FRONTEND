@@ -3,7 +3,7 @@ import { Eye, EyeOff, User, Database, Shield, Zap, Mail, Edit2 } from 'lucide-re
 
 const API_URL = 'https://fullstackprojectbackend-production.up.railway.app';
 
-function Profile({ user }) {
+function Profile({ user, setUser }) {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,6 +18,8 @@ function Profile({ user }) {
 
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  const defaultPlans = ['Free Plan', 'Upgrade 1', 'Upgrade 2', 'Pro'];
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -27,7 +29,7 @@ function Profile({ user }) {
         setProfileData(data);
         setNewPassword(data.password);
         
-        const isStandard = ['Standard', 'Pro', 'Enterprise'].includes(data.plan);
+        const isStandard = defaultPlans.includes(data.plan);
         setDropdownPlan(isStandard ? data.plan : 'Custom');
         setCustomPlanName(isStandard ? '' : data.plan);
       } catch (err) {
@@ -75,6 +77,10 @@ function Profile({ user }) {
       if (!response.ok) throw new Error(data.error || "Failed to update plan");
 
       setProfileData({ ...profileData, plan: finalPlanName });
+      if (setUser) {
+        setUser(prevUser => ({ ...prevUser, plan: finalPlanName }));
+      }
+      
       setIsEditingPlan(false);
       setMessage({ type: 'success', text: 'Plan updated successfully' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -85,7 +91,7 @@ function Profile({ user }) {
 
   const cancelPlanEdit = () => {
     setIsEditingPlan(false);
-    const isStandard = ['Standard', 'Pro', 'Enterprise'].includes(profileData.plan);
+    const isStandard = defaultPlans.includes(profileData.plan);
     setDropdownPlan(isStandard ? profileData.plan : 'Custom');
     setCustomPlanName(isStandard ? '' : profileData.plan);
   };
@@ -198,9 +204,10 @@ function Profile({ user }) {
                   onChange={(e) => setDropdownPlan(e.target.value)}
                   style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px', minWidth: '150px' }}
                 >
-                  <option value="Standard">Standard</option>
+                  <option value="Free Plan">Free Plan</option>
+                  <option value="Upgrade 1">Upgrade 1</option>
+                  <option value="Upgrade 2">Upgrade 2</option>
                   <option value="Pro">Pro</option>
-                  <option value="Enterprise">Enterprise</option>
                   <option value="Custom">Custom...</option>
                 </select>
                 

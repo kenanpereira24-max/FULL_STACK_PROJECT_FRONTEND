@@ -15,7 +15,7 @@ function Profile({ user, setUser }) {
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   const [dropdownPlan, setDropdownPlan] = useState("");
   const [customAmount, setCustomAmount] = useState("");
-  const [customUnit, setCustomUnit] = useState("GB");
+  const [customUnit, setCustomUnit] = useState("TB");
 
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -33,7 +33,7 @@ function Profile({ user, setUser }) {
         const isStandard = defaultPlans.includes(data.plan);
         setDropdownPlan(isStandard ? data.plan : 'Custom');
         setCustomAmount("");
-        setCustomUnit("GB");
+        setCustomUnit("TB");
       } catch (err) {
         setError(err.message);
       } finally {
@@ -69,7 +69,11 @@ function Profile({ user, setUser }) {
       let payload = { userId: profileData.user_id };
 
       if (dropdownPlan === 'Custom') {
-        if (!customAmount) throw new Error("Please enter a data amount");
+        const amt = parseInt(customAmount);
+        if (!amt || amt < 1) throw new Error("Minimum custom plan size is 1 TB");
+        if (customUnit === 'PB' && amt > 1) throw new Error("Maximum custom plan size is 1 PB");
+        if (customUnit === 'TB' && amt > 1024) throw new Error("Maximum custom plan size is 1024 TB (1 PB)");
+
         payload.isCustom = true;
         payload.customAmount = customAmount;
         payload.customUnit = customUnit;
@@ -104,7 +108,7 @@ function Profile({ user, setUser }) {
     const isStandard = defaultPlans.includes(profileData.plan);
     setDropdownPlan(isStandard ? profileData.plan : 'Custom');
     setCustomAmount("");
-    setCustomUnit("GB");
+    setCustomUnit("TB");
   };
 
   if (loading) return <div style={{ padding: '40px', color: '#f8fafc' }}>Loading profile data...</div>;
@@ -230,15 +234,21 @@ function Profile({ user, setUser }) {
                       onChange={(e) => setCustomAmount(e.target.value)}
                       placeholder="Amount"
                       min="1"
+                      max={customUnit === 'PB' ? "1" : "1024"}
                       style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px', width: '100px' }}
                     />
                     <select
                       value={customUnit}
-                      onChange={(e) => setCustomUnit(e.target.value)}
+                      onChange={(e) => {
+                        setCustomUnit(e.target.value);
+                        if (e.target.value === 'PB' && parseInt(customAmount) > 1) {
+                          setCustomAmount("1");
+                        }
+                      }}
                       style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px' }}
                     >
-                      <option value="GB">GB</option>
                       <option value="TB">TB</option>
+                      <option value="PB">PB</option>
                     </select>
                   </div>
                 )}

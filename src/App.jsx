@@ -129,7 +129,12 @@ function AppRoutes() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('userId', user.id);
+      
+      const currentFolderObj = folders.find(f => f.id === currentFolder);
+      const currentFolderName = currentFolderObj ? currentFolderObj.name : null;
+      
       formData.append('folderId', currentFolder !== null ? currentFolder : 'null');
+      formData.append('folderName', currentFolderName !== null ? currentFolderName : 'null');
 
       try {
         const response = await fetch(`${API_URL}/api/upload`, {
@@ -158,6 +163,7 @@ function AppRoutes() {
             size: sizeStr,
             type: fileType,
             folderId: currentFolder,
+            folderName: currentFolderName,
             content: `Google Drive File ID: ${data.fileId}`
           };
           setFiles((prev) => [...prev, newFile]);
@@ -203,6 +209,8 @@ function AppRoutes() {
     if (newFileName.trim()) {
       const extMatch = newFileName.match(/\.([^.]+)$/);
       const fileType = extMatch ? extMatch[1] : "txt";
+      const currentFolderObj = folders.find(f => f.id === currentFolder);
+      const currentFolderName = currentFolderObj ? currentFolderObj.name : null;
 
       try {
         const response = await fetch(`${API_URL}/api/files`, {
@@ -213,6 +221,7 @@ function AppRoutes() {
             size: "0 KB",
             userId: user.id,
             folderId: currentFolder,
+            folderName: currentFolderName,
             content: ""
           })
         });
@@ -224,6 +233,7 @@ function AppRoutes() {
           size: "0 KB",
           type: fileType,
           folderId: currentFolder,
+          folderName: currentFolderName,
           content: ""
         };
         setFiles((prev) => [...prev, newFile]);

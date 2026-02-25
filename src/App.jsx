@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Folder, File as FileIcon, Upload, HardDrive, ArrowLeft, Plus, Save, X, User, Share2 } from 'lucide-react';
+import { Folder, File as FileIcon, Upload, HardDrive, ArrowLeft, Plus, Save, X, Share2 } from 'lucide-react';
 import Auth from './Auth';
 import PlanSelection from './PlanSelection';
 import Navbar from './Navbar';
@@ -8,7 +8,6 @@ import Home from './Home';
 import Profile from './Profile';
 import './App.css';
 
-// Hardcoded live backend URL from Railway
 const API_URL = 'https://fullstackprojectbackend-production.up.railway.app';
 
 function AppRoutes() {
@@ -26,12 +25,13 @@ function AppRoutes() {
   const [newFolderName, setNewFolderName] = useState("");
 
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareData, setShareData] = useState(null);
+  const [fileToShare, setFileToShare] = useState(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [sharePermission, setSharePermission] = useState("viewer");
 
   const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '' });
 
   const navigate = useNavigate();
-  const location = useLocation();
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -81,22 +81,45 @@ function AppRoutes() {
     }
   };
 
-  const handleShare = async () => {
+  const openShareModal = (file, e) => {
+    e.stopPropagation();
+    setFileToShare(file);
+    setShareEmail("");
+    setSharePermission("viewer");
+    setShowShareModal(true);
+  };
+
+  const handleShareSubmit = async () => {
+    if (!shareEmail.trim()) {
+      setAlertModal({ show: true, title: 'Error', message: 'Enter an email address to share with.' });
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, permission: 'viewer' })
+        body: JSON.stringify({
+          fileId: fileToShare.id,
+          sharedWithEmail: shareEmail,
+          permission: sharePermission,
+          ownerId: user.id
+        })
       });
       const data = await response.json();
+      
       if (response.ok) {
-        setShareData({ id: data.share_id, link: data.link });
-        setShowShareModal(true);
+        setAlertModal({ show: true, title: 'Success', message: data.message });
+        if (sharePermission === 'owner') {
+          setFiles(files.filter(f => f.id !== fileToShare.id));
+          setEditingFile(null);
+        }
+        setShowShareModal(false);
       } else {
-        setAlertModal({ show: true, title: 'Share Failed', message: 'Failed to generate share link.' });
+        setAlertModal({ show: true, title: 'Share Failed', message: data.error });
       }
     } catch (err) {
-      setAlertModal({ show: true, title: 'Connection Error', message: 'Failed to connect to the share server.' });
+      setAlertModal({ show: true, title: 'Connection Error', message: 'Failed to connect to the server.' });
     }
   };
 
@@ -259,20 +282,35 @@ function AppRoutes() {
         </div>
       )}
 
-      {showShareModal && shareData && (
+      {showShareModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', width: '360px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
-            <h3 style={{ marginTop: 0, color: '#f8fafc', marginBottom: '16px' }}>Drive Shared Successfully</h3>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Share ID</label>
-              <div style={{ padding: '8px 12px', backgroundColor: 'rgba(15, 23, 42, 0.5)', borderRadius: '8px', color: '#f8fafc', border: '1px solid var(--border)' }}>{shareData.id}</div>
+            <h3 style={{ marginTop: 0, color: '#f8fafc', marginBottom: '16px' }}>Share '{fileToShare?.name}'</h3>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>User Email</label>
+              <input
+                type="email"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                placeholder="email@example.com"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', boxSizing: 'border-box' }}
+              />
             </div>
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Shareable Link</label>
-              <div style={{ padding: '8px 12px', backgroundColor: 'rgba(15, 23, 42, 0.5)', borderRadius: '8px', color: '#818cf8', border: '1px solid var(--border)', wordBreak: 'break-all' }}>{shareData.link}</div>
+              <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>Permission Level</label>
+              <select
+                value={sharePermission}
+                onChange={(e) => setSharePermission(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', boxSizing: 'border-box' }}
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="owner">Transfer Ownership</option>
+              </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowShareModal(false)} style={{ background: '#818cf8', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}>Close</button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowShareModal(false)} style={{ background: 'transparent', border: '1px solid var(--border)', color: '#94a3b8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}>Cancel</button>
+              <button onClick={handleShareSubmit} style={{ background: '#818cf8', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}>Share</button>
             </div>
           </div>
         </div>
@@ -368,9 +406,6 @@ function AppRoutes() {
                       <h2 style={{ margin: 0 }}>Welcome back, <span style={{ color: '#818cf8' }}>{user.name}</span>!</h2>
                       <p style={{ margin: '5px 0 0 0', opacity: 0.8 }}>You are currently on the <strong>{user.plan}</strong></p>
                     </div>
-                    <button className="upload-btn" style={{ background: '#818cf8', color: '#fff', border: 'none', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderRadius: '8px', fontWeight: 'bold' }} onClick={handleShare}>
-                      <Share2 size={18} /> Share Drive
-                    </button>
                   </div>
 
                   {editingFile ? (
@@ -381,6 +416,9 @@ function AppRoutes() {
                           <h3 style={{ margin: 0 }}>{editingFile.name}</h3>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
+                          <button onClick={(e) => openShareModal(editingFile, e)} className="upload-btn" style={{ padding: '8px 16px', background: '#3b82f6' }}>
+                            <Share2 size={16} /> Share
+                          </button>
                           <button onClick={saveFile} className="upload-btn" style={{ padding: '8px 16px' }}>
                             <Save size={16} /> Save File
                           </button>
@@ -446,10 +484,15 @@ function AppRoutes() {
                             <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>This folder is empty. Create or upload a file.</div>
                           ) : (
                             displayedFiles.map(file => (
-                              <div key={file.id} className="file-row" onClick={() => openFile(file)}>
-                                <FileIcon size={24} color="#94a3b8" />
-                                <div className="file-info">{file.name}</div>
-                                <div className="file-size">{file.size}</div>
+                              <div key={file.id} className="file-row" onClick={() => openFile(file)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                  <FileIcon size={24} color="#94a3b8" />
+                                  <div className="file-info">{file.name}</div>
+                                  <div className="file-size">{file.size}</div>
+                                </div>
+                                <button onClick={(e) => openShareModal(file, e)} style={{ background: 'transparent', border: 'none', color: '#818cf8', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '8px' }}>
+                                  <Share2 size={20} />
+                                </button>
                               </div>
                             ))
                           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, User, Database, Shield, Zap, Mail, Save, Edit2 } from 'lucide-react';
+import { Eye, EyeOff, User, Database, Shield, Zap, Mail, Edit2 } from 'lucide-react';
 
 const API_URL = 'https://fullstackprojectbackend-production.up.railway.app';
 
@@ -13,7 +13,8 @@ function Profile({ user }) {
   const [newPassword, setNewPassword] = useState("");
   
   const [isEditingPlan, setIsEditingPlan] = useState(false);
-  const [newPlan, setNewPlan] = useState("");
+  const [dropdownPlan, setDropdownPlan] = useState("");
+  const [customPlanName, setCustomPlanName] = useState("");
 
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -25,7 +26,10 @@ function Profile({ user }) {
         const data = await response.json();
         setProfileData(data);
         setNewPassword(data.password);
-        setNewPlan(data.plan);
+        
+        const isStandard = ['Standard', 'Premium', 'Enterprise'].includes(data.plan);
+        setDropdownPlan(isStandard ? data.plan : 'Custom');
+        setCustomPlanName(isStandard ? '' : data.plan);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -58,22 +62,32 @@ function Profile({ user }) {
 
   const handleUpdatePlan = async () => {
     try {
+      const finalPlanName = dropdownPlan === 'Custom' ? customPlanName.trim() : dropdownPlan;
+      if (!finalPlanName) throw new Error("Plan name cannot be empty");
+
       const response = await fetch(`${API_URL}/api/profile/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: profileData.user_id, newPlanName: newPlan })
+        body: JSON.stringify({ userId: profileData.user_id, newPlanName: finalPlanName })
       });
       
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to update plan");
 
-      setProfileData({ ...profileData, plan: newPlan });
+      setProfileData({ ...profileData, plan: finalPlanName });
       setIsEditingPlan(false);
       setMessage({ type: 'success', text: 'Plan updated successfully' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
+  };
+
+  const cancelPlanEdit = () => {
+    setIsEditingPlan(false);
+    const isStandard = ['Standard', 'Premium', 'Enterprise'].includes(profileData.plan);
+    setDropdownPlan(isStandard ? profileData.plan : 'Custom');
+    setCustomPlanName(isStandard ? '' : profileData.plan);
   };
 
   if (loading) return <div style={{ padding: '40px', color: '#f8fafc' }}>Loading profile data...</div>;
@@ -178,18 +192,30 @@ function Profile({ user }) {
               <Zap size={16} /> Subscription Plan
             </div>
             {isEditingPlan ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <select
-                  value={newPlan}
-                  onChange={(e) => setNewPlan(e.target.value)}
+                  value={dropdownPlan}
+                  onChange={(e) => setDropdownPlan(e.target.value)}
                   style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px', minWidth: '150px' }}
                 >
                   <option value="Standard">Standard</option>
                   <option value="Premium">Premium</option>
                   <option value="Enterprise">Enterprise</option>
+                  <option value="Custom">Custom...</option>
                 </select>
+                
+                {dropdownPlan === 'Custom' && (
+                  <input
+                    type="text"
+                    value={customPlanName}
+                    onChange={(e) => setCustomPlanName(e.target.value)}
+                    placeholder="Enter custom plan name"
+                    style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px' }}
+                  />
+                )}
+
                 <button onClick={handleUpdatePlan} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#818cf8', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>Save</button>
-                <button onClick={() => { setIsEditingPlan(false); setNewPlan(profileData.plan); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={cancelPlanEdit} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer' }}>Cancel</button>
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

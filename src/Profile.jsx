@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Database, Shield, Zap, Mail } from 'lucide-react';
 
+const API_URL = 'https://fullstackprojectbackend-production.up.railway.app';
+
 function Profile({ user }) {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ function Profile({ user }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/profile/${user.name}`);
+        const response = await fetch(`${API_URL}/api/profile/${user.name}`);
         if (!response.ok) throw new Error('Failed to fetch profile data');
         const data = await response.json();
         setProfileData(data);

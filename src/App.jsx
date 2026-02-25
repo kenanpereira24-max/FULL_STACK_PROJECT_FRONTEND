@@ -124,25 +124,96 @@ function AppRoutes() {
   };
 
  const handleFileChange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const selectedFile = e.target.files[0];
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("userId", user.id);
-  formData.append("folderId", currentFolder || null);
+  if (selectedFile) {
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("userId", user.id);
 
-  try {
-    const response = await fetch(`${API_URL}/api/upload`, {
-      method: "POST",
-      body: formData,
-    });
+    const currentFolderObj = folders.find(
+      (f) => f.id === currentFolder
+    );
 
-    const data = await response.json();
-    console.log("Upload success:", data);
-  } catch (error) {
-    console.error("Upload failed:", error);
+    const currentFolderName = currentFolderObj
+      ? currentFolderObj.name
+      : null;
+
+    formData.append(
+      "folderId",
+      currentFolder !== null ? currentFolder : "null"
+    );
+
+    formData.append(
+      "folderName",
+      currentFolderName !== null ? currentFolderName : "null"
+    );
+
+    try {
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        let sizeStr = "";
+
+        if (selectedFile.size < 1024) {
+          sizeStr = selectedFile.size + " B";
+        } else if (selectedFile.size < 1024 * 1024) {
+          sizeStr =
+            (selectedFile.size / 1024).toFixed(1) + " KB";
+        } else {
+          sizeStr =
+            (selectedFile.size / (1024 * 1024)).toFixed(1) +
+            " MB";
+        }
+
+        const extMatch =
+          selectedFile.name.match(/\.([^.]+)$/);
+        const fileType = extMatch
+          ? extMatch[1]
+          : "file";
+
+        const newFile = {
+          name: selectedFile.name,
+          size: sizeStr,
+          type: fileType,
+          folderId: currentFolder,
+          folderName: currentFolderName,
+          content: `Google Drive File ID: ${data.fileId}`,
+        };
+
+        setFiles((prev) => [...prev, newFile]);
+
+        setAlertModal({
+          show: true,
+          title: "Success",
+          message:
+            "File uploaded and saved to database successfully.",
+        });
+      } else {
+        setAlertModal({
+          show: true,
+          title: "Upload Failed",
+          message:
+            data.error ||
+            "The server rejected the file.",
+        });
+      }
+    } catch (error) {
+      setAlertModal({
+        show: true,
+        title: "Connection Error",
+        message:
+          "Failed to connect to the backend server.",
+      });
+    }
   }
+
+  e.target.value = null;
 };
 
   const triggerCreateFolder = () => {

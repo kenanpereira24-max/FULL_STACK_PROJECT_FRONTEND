@@ -18,6 +18,8 @@ function Profile({ user }) {
 
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  const defaultPlans = ['Free Plan', 'Upgrade 1', 'Upgrade 2', 'Pro'];
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -27,7 +29,7 @@ function Profile({ user }) {
         setProfileData(data);
         setNewPassword(data.password);
         
-        const isStandard = ['Standard', 'Premium', 'Enterprise'].includes(data.plan);
+        const isStandard = defaultPlans.includes(data.plan);
         setDropdownPlan(isStandard ? data.plan : 'Custom');
         setCustomPlanName(isStandard ? '' : data.plan);
       } catch (err) {
@@ -85,7 +87,7 @@ function Profile({ user }) {
 
   const cancelPlanEdit = () => {
     setIsEditingPlan(false);
-    const isStandard = ['Standard', 'Premium', 'Enterprise'].includes(profileData.plan);
+    const isStandard = defaultPlans.includes(profileData.plan);
     setDropdownPlan(isStandard ? profileData.plan : 'Custom');
     setCustomPlanName(isStandard ? '' : profileData.plan);
   };
@@ -198,9 +200,10 @@ function Profile({ user }) {
                   onChange={(e) => setDropdownPlan(e.target.value)}
                   style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px', minWidth: '150px' }}
                 >
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                  <option value="Enterprise">Enterprise</option>
+                  <option value="Free Plan">Free Plan</option>
+                  <option value="Upgrade 1">Upgrade 1</option>
+                  <option value="Upgrade 2">Upgrade 2</option>
+                  <option value="Pro">Pro</option>
                   <option value="Custom">Custom...</option>
                 </select>
                 

@@ -14,7 +14,8 @@ function Profile({ user, setUser }) {
   
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   const [dropdownPlan, setDropdownPlan] = useState("");
-  const [customPlanName, setCustomPlanName] = useState("");
+  const [customAmount, setCustomAmount] = useState("");
+  const [customUnit, setCustomUnit] = useState("GB");
 
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -31,7 +32,8 @@ function Profile({ user, setUser }) {
         
         const isStandard = defaultPlans.includes(data.plan);
         setDropdownPlan(isStandard ? data.plan : 'Custom');
-        setCustomPlanName(isStandard ? '' : data.plan);
+        setCustomAmount("");
+        setCustomUnit("GB");
       } catch (err) {
         setError(err.message);
       } finally {
@@ -64,23 +66,31 @@ function Profile({ user, setUser }) {
 
   const handleUpdatePlan = async () => {
     try {
-      const finalPlanName = dropdownPlan === 'Custom' ? customPlanName.trim() : dropdownPlan;
-      if (!finalPlanName) throw new Error("Plan name cannot be empty");
+      let payload = { userId: profileData.user_id };
+
+      if (dropdownPlan === 'Custom') {
+        if (!customAmount) throw new Error("Please enter a data amount");
+        payload.isCustom = true;
+        payload.customAmount = customAmount;
+        payload.customUnit = customUnit;
+      } else {
+        payload.newPlanName = dropdownPlan;
+      }
 
       const response = await fetch(`${API_URL}/api/profile/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: profileData.user_id, newPlanName: finalPlanName })
+        body: JSON.stringify(payload)
       });
       
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to update plan");
 
-      setProfileData({ ...profileData, plan: finalPlanName });
+      setProfileData({ ...profileData, plan: data.planName });
       if (setUser) {
-        setUser(prevUser => ({ ...prevUser, plan: finalPlanName }));
+        setUser(prevUser => ({ ...prevUser, plan: data.planName }));
       }
-      
+
       setIsEditingPlan(false);
       setMessage({ type: 'success', text: 'Plan updated successfully' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -93,7 +103,8 @@ function Profile({ user, setUser }) {
     setIsEditingPlan(false);
     const isStandard = defaultPlans.includes(profileData.plan);
     setDropdownPlan(isStandard ? profileData.plan : 'Custom');
-    setCustomPlanName(isStandard ? '' : profileData.plan);
+    setCustomAmount("");
+    setCustomUnit("GB");
   };
 
   if (loading) return <div style={{ padding: '40px', color: '#f8fafc' }}>Loading profile data...</div>;
@@ -212,13 +223,24 @@ function Profile({ user, setUser }) {
                 </select>
                 
                 {dropdownPlan === 'Custom' && (
-                  <input
-                    type="text"
-                    value={customPlanName}
-                    onChange={(e) => setCustomPlanName(e.target.value)}
-                    placeholder="Enter custom plan name"
-                    style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px' }}
-                  />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="number"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      placeholder="Amount"
+                      min="1"
+                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px', width: '100px' }}
+                    />
+                    <select
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #818cf8', backgroundColor: 'rgba(15, 23, 42, 0.5)', color: '#f8fafc', fontSize: '16px' }}
+                    >
+                      <option value="GB">GB</option>
+                      <option value="TB">TB</option>
+                    </select>
+                  </div>
                 )}
 
                 <button onClick={handleUpdatePlan} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#818cf8', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>Save</button>
